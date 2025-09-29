@@ -258,3 +258,18 @@ class PowerCalculation(Calculation):
     def execute(self) -> float:
         # Calls the multiplication method from the Operation module to perform the multiplication.
         return Operation.power(self.a, self.b) # pragma: no cover
+
+@CalculationFactory.register_calculation('modulus')
+class ModulusCalculation(Calculation):
+    """
+    ModulusCalculation represents the modulus (remainder) operation.
+
+    **Why its own class?**
+    - **Polymorphism**: Used interchangeably with other calculations via `execute`.
+    - **Modularity**: Keeps modulus logic isolated for easy testing and maintenance.
+    - **Edge Cases**: Central place to document/handle divisor-zero behavior.
+    """
+
+    def execute(self) -> float:
+        # Calls the modulus method from the Operation module to compute the remainder.
+        return Operation.modulus(self.a, self.b)

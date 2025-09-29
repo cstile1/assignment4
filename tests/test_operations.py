@@ -361,4 +361,20 @@ def test_operations_invalid_input_types(calc_method, a, b, expected_exception):
     with pytest.raises(expected_exception):
         calc_method(a, b)
 
+def test_power_positive():
+    """
+    Test the multiplication method with two positive numbers.
+    
+    This test verifies that multiplying two positive numbers returns the correct product.
+    """
+    # Arrange
+    a = 2.0
+    b = 2.0
+    expected_result = 4.0
+
+    # Act
+    result = Operation.power(a, b)
+
+    # Assert
+    assert result == expected_result, f"Expected {a} * {b} to be {expected_result}, got {result}"
 

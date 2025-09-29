@@ -159,10 +159,14 @@ class Operation:
     def modulus(a: float, b: float) -> float:
         """
         Returns the remainder when `a` is divided by `b`.
-        Raises ZeroDivisionError if b == 0.
+
+        Raises:
+            ValueError: If b == 0, consistent with Operation.division tests.
         """
         if b == 0:
-            raise ZeroDivisionError("Cannot take modulus with divisor zero.")
+            raise ValueError("Modulus by zero is not allowed.")
         return a % b
+
+
 
     

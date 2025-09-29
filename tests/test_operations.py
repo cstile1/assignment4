@@ -378,3 +378,44 @@ def test_power_positive():
     # Assert
     assert result == expected_result, f"Expected {a} * {b} to be {expected_result}, got {result}"
 
+def test_modulus_positive():
+    """
+    Modulus of two positive numbers.
+    """
+    a = 10.0
+    b = 3.0
+    expected_result = 1.0
+    result = Operation.modulus(a, b)
+    assert result == expected_result, f"Expected {a} % {b} to be {expected_result}, got {result}"
+
+
+def test_modulus_zero_divisor():
+    """
+    Modulus with zero as the divisor should raise ValueError (consistent with your division tests).
+    """
+    a = 10.0
+    b = 0.0
+    with pytest.raises(ValueError) as exc_info:
+        Operation.modulus(a, b)
+    assert str(exc_info.value) == "Modulus by zero is not allowed."
+
+
+def test_modulus_zero_numerator():
+    """
+    0 % b == 0 for any non-zero b.
+    """
+    a = 0.0
+    b = 5.0
+    expected_result = 0.0
+    result = Operation.modulus(a, b)
+    assert result == expected_result, f"Expected {a} % {b} to be {expected_result}, got {result}"
+
+
+def test_modulus_negative_numbers():
+    """
+    Python's % follows the sign of the divisor.
+    -10 % 3 == 2; 10 % -3 == -2
+    """
+    assert Operation.modulus(-10.0, 3.0) == 2.0
+    assert Operation.modulus(10.0, -3.0) == -2.0
+

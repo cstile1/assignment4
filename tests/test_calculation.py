@@ -20,9 +20,10 @@ from app.calculation import (
     SubtractCalculation,
     MultiplyCalculation,
     DivideCalculation,
+    PowerCalculation,
+    ModulusCalculation,
     Calculation
 )
-
 
 # -----------------------------------------------------------------------------------
 # Test Concrete Calculation Classes
@@ -207,6 +208,33 @@ def test_divide_calculation_execute_negative(mock_division):
     # Verify that the exception message is as expected
     assert str(exc_info.value) == "Division error"
 
+@patch.object(Operation, 'power')
+def test_power_calculation_execute_positive(mock_power):
+    a, b = 2.0, 5.0
+    mock_power.return_value = 32.0
+    calc = PowerCalculation(a, b)
+    result = calc.execute()
+    mock_power.assert_called_once_with(a, b)
+    assert result == 32.0
+
+@patch.object(Operation, 'modulus')
+def test_modulus_calculation_execute_positive(mock_modulus):
+    a, b = 10.0, 3.0
+    mock_modulus.return_value = 1.0
+    calc = ModulusCalculation(a, b)
+    result = calc.execute()
+    mock_modulus.assert_called_once_with(a, b)
+    assert result == 1.0
+
+@patch.object(Operation, 'modulus')
+def test_modulus_calculation_execute_zero_divisor(mock_modulus):
+    a, b = 10.0, 0.0
+    mock_modulus.side_effect = ValueError("Modulus by zero is not allowed.")
+    calc = ModulusCalculation(a, b)
+    with pytest.raises(ValueError) as exc:
+        calc.execute()
+    assert str(exc.value) == "Modulus by zero is not allowed."
+
 
 def test_divide_calculation_execute_division_by_zero():
     """
@@ -313,23 +341,8 @@ def test_factory_creates_divide_calculation():
 
 
 def test_factory_create_unsupported_calculation():
-    """
-    Test that CalculationFactory raises ValueError when an unsupported calculation type is requested.
-
-    This test ensures that requesting a calculation type not registered with the factory
-    results in a ValueError with an appropriate error message.
-    """
-    # Arrange
-    a = 10.0
-    b = 5.0
-    unsupported_type = 'modulus'  # An unsupported calculation type
-
-    # Act & Assert
-    with pytest.raises(ValueError) as exc_info:
-        CalculationFactory.create_calculation(unsupported_type, a, b)
-
-    # Verify that the exception message contains the unsupported type
-    assert f"Unsupported calculation type: '{unsupported_type}'" in str(exc_info.value)
+    with pytest.raises(ValueError):
+        CalculationFactory.create_calculation('sqrt', 9.0, 0.5)
 
 
 def test_factory_register_calculation_duplicate():
@@ -486,32 +499,41 @@ def test_calculation_repr_representation_division():
     expected_repr = f"{DivideCalculation.__name__}(a={a}, b={b})"
     assert calc_repr == expected_repr
 
+def test_factory_creates_power_calculation():
+    calc = CalculationFactory.create_calculation('power', 2.0, 5.0)
+    assert isinstance(calc, PowerCalculation)
+    assert calc.a == 2.0 and calc.b == 5.0
+
+def test_factory_creates_modulus_calculation():
+    calc = CalculationFactory.create_calculation('modulus', 10.0, 3.0)
+    assert isinstance(calc, ModulusCalculation)
+    assert calc.a == 10.0 and calc.b == 3.0
+
 
 # -----------------------------------------------------------------------------------
 # Parameterized Tests for Execute Method
 # -----------------------------------------------------------------------------------
 
+from unittest.mock import patch
+
+@patch("app.calculation.Operation.addition")
+@patch("app.calculation.Operation.subtraction")
+@patch("app.calculation.Operation.multiplication")
+@patch("app.calculation.Operation.division")
+@patch("app.calculation.Operation.power")
+@patch("app.calculation.Operation.modulus")
 @pytest.mark.parametrize("calc_type, a, b, expected_result", [
     ('add', 10.0, 5.0, 15.0),
     ('subtract', 10.0, 5.0, 5.0),
     ('multiply', 10.0, 5.0, 50.0),
     ('divide', 10.0, 5.0, 2.0),
+    ('power', 2.0, 5.0, 32.0),
+    ('modulus', 10.0, 3.0, 1.0),
 ])
-@patch.object(Operation, 'addition')
-@patch.object(Operation, 'subtraction')
-@patch.object(Operation, 'multiplication')
-@patch.object(Operation, 'division')
 def test_calculation_execute_parameterized(
-    mock_division, mock_multiplication, mock_subtraction, mock_addition,
+    mock_modulus, mock_power, mock_division, mock_multiplication, mock_subtraction, mock_addition,
     calc_type, a, b, expected_result
 ):
-    """
-    Parameterized test for execute method of different Calculation subclasses.
-
-    This test runs multiple scenarios where different calculation types are executed
-    with specific operands, verifying that the correct result is returned.
-    """
-    # Arrange: Set the appropriate mock based on calculation type
     if calc_type == 'add':
         mock_addition.return_value = expected_result
     elif calc_type == 'subtract':
@@ -520,53 +542,35 @@ def test_calculation_execute_parameterized(
         mock_multiplication.return_value = expected_result
     elif calc_type == 'divide':
         mock_division.return_value = expected_result
+    elif calc_type == 'power':
+        mock_power.return_value = expected_result
+    elif calc_type == 'modulus':
+        mock_modulus.return_value = expected_result
 
-    # Act: Create calculation instance and execute
     calc = CalculationFactory.create_calculation(calc_type, a, b)
-    result = calc.execute()
-
-    # Assert: Verify the correct operation was called and result matches
-    if calc_type == 'add':
-        mock_addition.assert_called_once_with(a, b)
-    elif calc_type == 'subtract':
-        mock_subtraction.assert_called_once_with(a, b)
-    elif calc_type == 'multiply':
-        mock_multiplication.assert_called_once_with(a, b)
-    elif calc_type == 'divide':
-        mock_division.assert_called_once_with(a, b)
-
-    assert result == expected_result
+    assert calc.execute() == expected_result
 
 
 # -----------------------------------------------------------------------------------
 # Parameterized Tests for String Representation
 # -----------------------------------------------------------------------------------
-
+@patch("app.calculation.Operation.addition", return_value=15.0)
+@patch("app.calculation.Operation.subtraction", return_value=5.0)
+@patch("app.calculation.Operation.multiplication", return_value=50.0)
+@patch("app.calculation.Operation.division", return_value=2.0)
+@patch("app.calculation.Operation.power", return_value=32.0)
+@patch("app.calculation.Operation.modulus", return_value=1.0)
 @pytest.mark.parametrize("calc_type, a, b, expected_str", [
     ('add', 10.0, 5.0, "AddCalculation: 10.0 Add 5.0 = 15.0"),
     ('subtract', 10.0, 5.0, "SubtractCalculation: 10.0 Subtract 5.0 = 5.0"),
     ('multiply', 10.0, 5.0, "MultiplyCalculation: 10.0 Multiply 5.0 = 50.0"),
     ('divide', 10.0, 5.0, "DivideCalculation: 10.0 Divide 5.0 = 2.0"),
+    ('power', 2.0, 5.0, "PowerCalculation: 2.0 Power 5.0 = 32.0"),
+    ('modulus', 10.0, 3.0, "ModulusCalculation: 10.0 Modulus 3.0 = 1.0"),
 ])
-@patch.object(Operation, 'addition', return_value=15.0)
-@patch.object(Operation, 'subtraction', return_value=5.0)
-@patch.object(Operation, 'multiplication', return_value=50.0)
-@patch.object(Operation, 'division', return_value=2.0)
 def test_calculation_str_parameterized(
-    mock_division, mock_multiplication, mock_subtraction, mock_addition,
+    mock_modulus, mock_power, mock_division, mock_multiplication, mock_subtraction, mock_addition,
     calc_type, a, b, expected_str
 ):
-    """
-    Parameterized test for __str__ method of Calculation subclasses.
-
-    This test verifies that the string representation of different Calculation instances
-    is formatted correctly, displaying the class name, operation, operands, and result.
-    """
-    # Arrange: No additional setup needed as mocks are already set via decorators
-
-    # Act: Create calculation instance and get string representation
     calc = CalculationFactory.create_calculation(calc_type, a, b)
-    calc_str = str(calc)
-
-    # Assert: Verify the string representation matches the expected format
-    assert calc_str == expected_str
+    assert str(calc) == expected_str

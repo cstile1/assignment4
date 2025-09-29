@@ -1,25 +1,26 @@
 # tests/conftest.py
 
 import pytest
-from app.calculation import CalculationFactory
-from app.calculation import (
-    AddCalculation,
-    SubtractCalculation,
-    MultiplyCalculation,
-    DivideCalculation,
-    
-)
+import importlib
+
+# Import the calculator module that defines and registers all classes
+import app.calculation as calcmod
 
 @pytest.fixture(autouse=True)
-def reset_calculation_factory():
+def ensure_factory_has_all_calculations():
     """
-    Fixture to reset CalculationFactory's registered calculations before each test.
+    Reload app.calculation before each test so the @register_calculation
+    decorators run and all operations (including power/modulus) are registered.
+    Then, defensively ensure the registry includes all expected types.
     """
-    # Clear existing registrations
-    CalculationFactory._calculations.clear()
+    importlib.reload(calcmod)
 
-    # Re-register the default calculations
-    CalculationFactory.register_calculation('add')(AddCalculation)
-    CalculationFactory.register_calculation('subtract')(SubtractCalculation)
-    CalculationFactory.register_calculation('multiply')(MultiplyCalculation)
-    CalculationFactory.register_calculation('divide')(DivideCalculation)
+    # Make sure _calculations includes every operation we support
+    calcmod.CalculationFactory._calculations.update({
+        'add':      calcmod.AddCalculation,
+        'subtract': calcmod.SubtractCalculation,
+        'multiply': calcmod.MultiplyCalculation,
+        'divide':   calcmod.DivideCalculation,
+        'power':    calcmod.PowerCalculation,
+        'modulus':  calcmod.ModulusCalculation,
+    })

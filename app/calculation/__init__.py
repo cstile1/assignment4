@@ -1,4 +1,4 @@
-# calculator_calculations.py
+# app calculation __init__ py file
 
 # -----------------------------------------------------------------------------------
 # Import Statements
@@ -273,3 +273,14 @@ class ModulusCalculation(Calculation):
     def execute(self) -> float:
         # Calls the modulus method from the Operation module to compute the remainder.
         return Operation.modulus(self.a, self.b)
+    
+__all__ = [
+    "Calculation",
+    "CalculationFactory",
+    "AddCalculation",
+    "SubtractCalculation",
+    "MultiplyCalculation",
+    "DivideCalculation",
+    "PowerCalculation",
+    "ModulusCalculation",
+]

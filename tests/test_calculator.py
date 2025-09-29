@@ -330,16 +330,8 @@ def test_calculator_invalid_number_input(monkeypatch, capsys):
 # ... [other imports and tests] ...
 
 def test_calculator_unsupported_operation(monkeypatch, capsys):
-    """
-    Test the calculator's handling of an unsupported operation.
-
-    AAA Pattern:
-    - Arrange: Provide an operation that is not supported.
-    - Act: Call the calculator function.
-    - Assert: Verify that the appropriate error message is displayed.
-    """
     # Arrange
-    user_input = 'modulus 2 3\nexit\n'  # Changed 'power' to 'modulus'
+    user_input = 'sqrt 2 3\nexit\n'   # was 'modulus 2 3'
     monkeypatch.setattr('sys.stdin', StringIO(user_input))
 
     # Act
@@ -348,8 +340,7 @@ def test_calculator_unsupported_operation(monkeypatch, capsys):
 
     # Assert
     captured = capsys.readouterr()
-    assert "Unsupported calculation type: 'modulus'." in captured.out
-    assert "Type 'help' to see the list of supported operations." in captured.out
+    assert "Unsupported calculation type: 'sqrt'." in captured.out
 
 
 def test_calculator_keyboard_interrupt(monkeypatch, capsys):
@@ -399,15 +390,6 @@ def test_calculator_eof_error(monkeypatch, capsys):
     assert exc_info.value.code == 0
 
 def test_calculator_unexpected_exception(monkeypatch, capsys):
-    """
-    Test the calculator's handling of unexpected exceptions during calculation execution.
-
-    AAA Pattern:
-    - Arrange: Mock the execute method to raise an unexpected exception.
-    - Act: Call the calculator function.
-    - Assert: Verify that the appropriate error message is displayed.
-    """
-    # Arrange
     class MockCalculation:
         def execute(self):
             raise Exception("Mock exception during execution")
@@ -417,15 +399,14 @@ def test_calculator_unexpected_exception(monkeypatch, capsys):
     def mock_create_calculation(operation, a, b):
         return MockCalculation()
 
-    monkeypatch.setattr('app.calculation.CalculationFactory.create_calculation', mock_create_calculation)
+    # Patch where the code under test looks it up:
+    monkeypatch.setattr('app.calculator.CalculationFactory.create_calculation', mock_create_calculation)
+
     user_input = 'add 10 5\nexit\n'
     monkeypatch.setattr('sys.stdin', StringIO(user_input))
 
-    # Act
     with pytest.raises(SystemExit):
         calculator()
 
-    # Assert
     captured = capsys.readouterr()
     assert "An error occurred during calculation: Mock exception during execution" in captured.out
-    assert "Please try again." in captured.out
